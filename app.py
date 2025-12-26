@@ -6,7 +6,7 @@ import joblib
 # Load the saved model and scaler
 # Ensure these files are in the same folder as App.py
 try:
-    model = joblib.load('best_gpa_model.pkl')
+    model = joblib.load('student_gpa_model.pkl')
     scaler = joblib.load('gpa_scaler.pkl')
 except:
     st.error("Error: Model or Scaler files not found. Please run the training script first.")
@@ -67,3 +67,4 @@ if st.button("Predict Student GPA"):
         st.info("Excellent! This student is projected to be in the top tier.")
     elif prediction < 2.0:
         st.warning("Attention: This student may need additional academic support.")
+
