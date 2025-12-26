@@ -1,55 +1,69 @@
 import streamlit as st
 import pandas as pd
-import joblib
 import numpy as np
+import joblib
 
-# Load the model and scaler
+# Load the saved model and scaler
+# Ensure these files are in the same folder as App.py
 try:
     model = joblib.load('best_gpa_model.pkl')
     scaler = joblib.load('gpa_scaler.pkl')
-except FileNotFoundError:
-    st.error("Error: Model or Scaler files not found. Please ensure 'best_gpa_model.pkl' and 'gpa_scaler.pkl' are in the same folder as this script.")
-    st.stop()
+except:
+    st.error("Error: Model or Scaler files not found. Please run the training script first.")
+
+st.set_page_config(page_title="Student GPA Predictor", page_icon="🎓")
 
 st.title("🎓 Student GPA Predictor")
-st.write("Enter the student details below to predict their GPA.")
+st.write("""
+This app predicts a student's **GPA** based on their demographics, habits, and parental involvement.
+Fill in the details below and click **Predict**.
+""")
 
-# Create two columns for inputs
+# Layout with two columns
 col1, col2 = st.columns(2)
 
 with col1:
-    age = st.number_input("Age", min_value=15, max_value=20, value=17)
-    gender = st.selectbox("Gender", options=[0, 1], format_func=lambda x: "Male" if x==0 else "Female")
-    ethnicity = st.selectbox("Ethnicity", options=[0, 1, 2, 3], help="0: Caucasian, 1: African American, 2: Asian, 3: Other")
-    parent_edu = st.selectbox("Parental Education", options=[0, 1, 2, 3, 4], help="0: None, 1: High School, 2: Some College, 3: Bachelor's, 4: Higher")
+    st.subheader("Demographics & Education")
+    age = st.number_input("Age", min_value=15, max_value=18, value=16)
+    gender = st.selectbox("Gender", options=[0, 1], format_func=lambda x: "Male" if x == 0 else "Female")
+    ethnicity = st.selectbox("Ethnicity", options=[0, 1, 2, 3], 
+                             format_func=lambda x: ["Caucasian", "African American", "Asian", "Other"][x])
+    parental_edu = st.selectbox("Parental Education", options=[0, 1, 2, 3, 4],
+                                format_func=lambda x: ["None", "High School", "Some College", "Bachelor's", "Higher"][x])
     study_time = st.slider("Weekly Study Time (hours)", 0, 20, 10)
-    absences = st.number_input("Absences", min_value=0, max_value=30, value=5)
+    absences = st.slider("Absences (days missed)", 0, 30, 5)
 
 with col2:
-    tutoring = st.radio("Tutoring", [0, 1], format_func=lambda x: "No" if x==0 else "Yes")
-    parent_support = st.selectbox("Parental Support", options=[0, 1, 2, 3, 4], help="0: None to 4: Very High")
-    extracurricular = st.radio("Extracurricular Activities", [0, 1], format_func=lambda x: "No" if x==0 else "Yes")
-    sports = st.radio("Plays Sports", [0, 1], format_func=lambda x: "No" if x==0 else "Yes")
-    music = st.radio("Music Activities", [0, 1], format_func=lambda x: "No" if x==0 else "Yes")
-    volunteering = st.radio("Volunteering", [0, 1], format_func=lambda x: "No" if x==0 else "Yes")
+    st.subheader("Activities & Support")
+    tutoring = st.radio("Tutoring", options=[0, 1], format_func=lambda x: "No" if x == 0 else "Yes")
+    parental_support = st.selectbox("Parental Support", options=[0, 1, 2, 3, 4],
+                                    format_func=lambda x: ["None", "Low", "Moderate", "High", "Very High"][x])
+    extracurriculars = st.radio("Extracurriculars", options=[0, 1], format_func=lambda x: "No" if x == 0 else "Yes")
+    sports = st.radio("Sports", options=[0, 1], format_func=lambda x: "No" if x == 0 else "Yes")
+    music = st.radio("Music", options=[0, 1], format_func=lambda x: "No" if x == 0 else "Yes")
+    volunteering = st.radio("Volunteering", options=[0, 1], format_func=lambda x: "No" if x == 0 else "Yes")
 
-# Predict button
-if st.button("Predict GPA"):
-    # Prepare input data
-    input_data = pd.DataFrame([[
-        age, gender, ethnicity, parent_edu, study_time, 
-        absences, tutoring, parent_support, extracurricular, 
-        sports, music, volunteering
-    ]], columns=['Age', 'Gender', 'Ethnicity', 'ParentalEducation', 'StudyTimeWeekly', 
-                 'Absences', 'Tutoring', 'ParentalSupport', 'Extracurricular', 
-                 'Sports', 'Music', 'Volunteering'])
+# Prepare input for prediction
+# Order must match exactly: Age, Gender, Ethnicity, ParentalEducation, StudyTimeWeekly, Absences, 
+# Tutoring, ParentalSupport, Extracurriculars, Sports, Music, Volunteering
+input_features = np.array([[age, gender, ethnicity, parental_edu, study_time, absences, 
+                            tutoring, parental_support, extracurriculars, sports, music, volunteering]])
+
+if st.button("Predict Student GPA"):
+    # 1. Scale inputs using the loaded scaler
+    input_scaled = scaler.transform(input_features)
     
-    # Scale and predict
-    scaled_data = scaler.transform(input_data)
-    prediction = model.predict(scaled_data)
+    # 2. Make prediction
+    prediction = model.predict(input_scaled)[0]
     
-    st.success(f"### Predicted GPA: {prediction[0]:.2f}")
+    # 3. Show Result
+    st.markdown("---")
+    st.success(f"### Predicted GPA: {prediction:.2f}")
     
-    # Visual indicator
-    if prediction[0] >= 3.0:
+    # Visualization
+    st.progress(min(max(prediction/4.0, 0.0), 1.0))
+    if prediction >= 3.5:
         st.balloons()
+        st.info("Excellent! This student is projected to be in the top tier.")
+    elif prediction < 2.0:
+        st.warning("Attention: This student may need additional academic support.")
