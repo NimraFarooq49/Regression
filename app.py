@@ -1,15 +1,17 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
+import os
 import joblib
+import streamlit as st
 
-# Load the saved model and scaler
-# Ensure these files are in the same folder as App.py
-try:
-    model = joblib.load('student_gpa_model.pkl')
-    scaler = joblib.load('gpa_scaler.pkl')
-except:
-    st.error("Error: Model or Scaler files not found. Please run the training script first.")
+MODEL_PATH = "student_gpa_model.pkl"
+SCALER_PATH = "gpa_scaler.pkl"
+
+if not os.path.exists(MODEL_PATH) or not os.path.exists(SCALER_PATH):
+    st.error("❌ Model or Scaler files not found. Please run the training script first.")
+    st.stop()
+
+model = joblib.load(MODEL_PATH)
+scaler = joblib.load(SCALER_PATH)
+
 
 st.set_page_config(page_title="Student GPA Predictor", page_icon="🎓")
 
@@ -67,4 +69,5 @@ if st.button("Predict Student GPA"):
         st.info("Excellent! This student is projected to be in the top tier.")
     elif prediction < 2.0:
         st.warning("Attention: This student may need additional academic support.")
+
 
