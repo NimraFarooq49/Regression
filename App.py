@@ -160,3 +160,4 @@ if st.button("🎯 Predict Student GPA"):
 # ==========================================
 st.markdown("---")
 st.caption("📚 Machine Learning GPA Predictor | Random Forest Regression")
+
